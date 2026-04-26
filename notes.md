@@ -63,6 +63,26 @@ gradient_steps = 1
 
 The longer budget and OU noise are intended to improve TD3's exploration. They do not guarantee that TD3 will solve the pure action-use reward, because that reward still makes no-action behavior attractive until the goal is discovered.
 
+## SAC Retuning
+
+SAC has now been changed from the earlier generic settings to the Stable-Baselines3/RL-Zoo-style settings for `MountainCarContinuous-v0`:
+
+```text
+total_timesteps = 150000
+ent_coef = 0.1
+gamma = 0.9999
+use_sde = True
+batch_size = 512
+buffer_size = 50000
+learning_starts = 0
+tau = 0.01
+train_freq = 32
+gradient_steps = 32
+policy_kwargs = dict(log_std_init=-3.67, net_arch=[64, 64])
+```
+
+The purpose is to keep SAC exploration from collapsing too early. After the kernel restart, the notebook training cell was changed to train any missing Scenario 4 model once and save it under `models/scenario4/`. Future reruns will load saved models instead of retraining them.
+
 ## Report Interpretation
 
 Use the pure action-use result as an important reward-design finding if it still fails: a scenario-correct objective can be difficult to learn from scratch when the terminal reward is sparse and exploration actions are immediately penalized.

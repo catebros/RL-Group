@@ -22,7 +22,18 @@ SB3_COMMON_KWARGS = {
 }
 
 SB3_ALGO_KWARGS = {
-    "SAC": {"ent_coef": "auto"},
+    "SAC": {
+        "buffer_size": 50_000,
+        "batch_size": 512,
+        "learning_starts": 0,
+        "gamma": 0.9999,
+        "tau": 0.01,
+        "train_freq": 32,
+        "gradient_steps": 32,
+        "ent_coef": 0.1,
+        "use_sde": True,
+        "policy_kwargs": {"log_std_init": -3.67, "net_arch": [64, 64]},
+    },
     "TD3": {
         "learning_rate": 1e-3,
         "buffer_size": 1_000_000,
@@ -81,6 +92,30 @@ def make_sb3_continuous_model(
     return algorithms[algo_name](**params)
 
 
+def load_sb3_continuous_model(
+    algorithm,
+    model_path,
+    env_factory,
+    seed=S4_DEFAULT_SEED,
+    verbose=0,
+):
+    """Load a saved Stable-Baselines3 continuous-control model with a fresh env."""
+    from stable_baselines3 import SAC, TD3
+
+    algorithms = {"SAC": SAC, "TD3": TD3}
+    algo_name = algorithm.upper() if isinstance(algorithm, str) else algorithm.__name__.upper()
+    if algo_name not in algorithms:
+        raise ValueError(f"Unsupported continuous algorithm: {algorithm!r}")
+
+    env = env_factory()
+    return algorithms[algo_name].load(
+        model_path,
+        env=env,
+        seed=seed,
+        verbose=verbose,
+    )
+
+
 def _make_eval_callback(eval_env_factory, eval_freq, n_eval_episodes, deterministic):
     from stable_baselines3.common.callbacks import BaseCallback
 
@@ -135,6 +170,7 @@ def train_sb3_continuous(
     n_eval_episodes=20,
     deterministic_eval=True,
     verbose=0,
+    model_save_path=None,
     **model_kwargs,
 ):
     """
@@ -162,6 +198,8 @@ def train_sb3_continuous(
         callback=callback,
         progress_bar=False,
     )
+    if model_save_path is not None:
+        model.save(model_save_path)
     return {
         "model": model,
         "run_name": run_name,

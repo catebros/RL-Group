@@ -9,6 +9,7 @@ from .continuous import (
     TD3_GAMMA,
     TD3_LEARNING_STARTS,
     make_sb3_continuous_model,
+    load_sb3_continuous_model,
     train_sb3_continuous,
     evaluate_continuous_policy,
     summarize_continuous_metrics,
