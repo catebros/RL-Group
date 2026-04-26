@@ -6,13 +6,29 @@ from .agents.dqn     import QNetwork, DQNAgent
 # Environments
 from .envs.wrappers import (
     DiscreteFuelWrapper, ContinuousStepsWrapper,
+    ContinuousActionUseWrapper, ContinuousShapedRewardWrapper, ContinuousLinearActionWrapper,
     make_s1, make_s2, make_s3, make_s4,
+    make_s4_default, make_s4_action_use, make_s4_shaped, make_s4_linear_action,
 )
 
 # Training
 from .training.loops import (
     train_tabular, evaluate_tabular,
     train_dqn,     evaluate_dqn,
+)
+from .training.continuous import (
+    S4_DEFAULT_SEED,
+    S4_TOTAL_TIMESTEPS,
+    S4_TD3_TOTAL_TIMESTEPS,
+    S4_MAX_STEPS,
+    TD3_ACTION_NOISE_SIGMA,
+    TD3_ACTION_NOISE_TYPE,
+    TD3_GAMMA,
+    TD3_LEARNING_STARTS,
+    make_sb3_continuous_model,
+    train_sb3_continuous,
+    evaluate_continuous_policy,
+    summarize_continuous_metrics,
 )
 
 
@@ -23,12 +39,14 @@ from .testbed.runner import Testbed
 from .visualization.plots import (
     plot_training_curve,
     plot_policy_heatmap,
+    plot_continuous_action_heatmap,
     plot_value_surface_3d,
     collect_trajectories,
     plot_phase_portrait,
     smooth,
     count_steps,
     get_sac_policy_grid,
+    get_continuous_policy_grid,
     ACTION_CMAP,
     ACTION_COLORS,
     ACTION_LABELS,
