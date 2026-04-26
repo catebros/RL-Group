@@ -52,3 +52,29 @@ class TabularQLearningAgent:
 
     def get_visit_grid(self):
         return np.sum(self.N, axis=2)
+
+    def save(self, path):
+        np.savez(path, Q=self.Q, N=self.N, epsilon=[self.epsilon])
+
+    @classmethod
+    def load(cls, path, **kwargs):
+        data = np.load(path)
+        n_bins = data['Q'].shape[0]
+        agent = cls(n_bins=n_bins, **kwargs)
+        agent.Q = data['Q']
+        agent.N = data['N']
+        agent.epsilon = float(data['epsilon'][0])
+        return agent
+
+
+class SarsaAgent(TabularQLearningAgent):
+    """On-policy SARSA — identical to Q-Learning except the TD target uses
+    the action actually taken in the next state instead of the greedy one."""
+
+    def update(self, state, action, reward, next_state, next_action, done):
+        pi,vi = self.discretize(state)
+        npi, nvi = self.discretize(next_state)
+        self.N[pi, vi, action] += 1
+        current_q = self.Q[pi, vi, action]
+        target = reward if done else reward + self.gamma * self.Q[npi, nvi, next_action]
+        self.Q[pi, vi, action] += self.alpha * (target - current_q)

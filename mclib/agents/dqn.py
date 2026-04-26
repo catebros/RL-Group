@@ -95,6 +95,22 @@ class DQNAgent:
 
         return loss.item()
 
+    def save(self, path):
+        torch.save({
+            'policy_net': self.policy_net.state_dict(),
+            'target_net': self.target_net.state_dict(),
+            'steps_done': self.steps_done,
+        }, path)
+
+    @classmethod
+    def load(cls, path, **kwargs):
+        agent = cls(**kwargs)
+        data = torch.load(path, map_location='cpu', weights_only=True)
+        agent.policy_net.load_state_dict(data['policy_net'])
+        agent.target_net.load_state_dict(data['target_net'])
+        agent.steps_done = data['steps_done']
+        return agent
+
     def get_q_values_grid(self, n_bins=40):
         pos_vals = np.linspace(-1.2, 0.6, n_bins)
         vel_vals = np.linspace(-0.07, 0.07, n_bins)

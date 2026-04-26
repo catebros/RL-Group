@@ -31,9 +31,32 @@ class ContinuousStepsWrapper(gym.Wrapper):
         return obs, reward, terminated, truncated, info
 
 
+class EnergyShapingWrapper(gym.Wrapper):
+    """
+    Potential-based reward shaping for discrete MountainCar (Scenario 1 variant).
+    Adds phi(s') - phi(s) where phi(s) = position + 0.5 * velocity ^2 
+    Guaranteed not to change the optimal policy (Ng et al. 1999).
+    """
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        self._prev_obs = obs
+        return obs, info
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        prev_pos, prev_vel = self._prev_obs
+        pos, vel = obs
+        shaping = (pos + 0.5 * vel ** 2) - (prev_pos + 0.5 * prev_vel ** 2)
+        self._prev_obs = obs
+        return obs, reward + shaping, terminated, truncated, info
+
+
 # Environment factory functions
 def make_s1():
     return gym.make('MountainCar-v0')
+
+def make_s1_shaped():
+    return EnergyShapingWrapper(gym.make('MountainCar-v0'))
 
 def make_s2():
     return Monitor(gym.make('MountainCarContinuous-v1'))
