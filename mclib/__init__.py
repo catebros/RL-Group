@@ -5,8 +5,8 @@ from .agents.dqn import QNetwork, DQNAgent
 
 # Environments
 from .envs.wrappers import (
-    DiscreteFuelWrapper, ContinuousStepsWrapper, EnergyShapingWrapper,
-    make_s1, make_s1_shaped, make_s2, make_s3, make_s4,
+    DiscreteFuelWrapper, DiscreteFuelWrapperV2, ContinuousStepsWrapper, EnergyShapingWrapper,
+    make_s1, make_s1_shaped, make_s2, make_s3, make_s3_v2, make_s4,
 )
 
 # Training
