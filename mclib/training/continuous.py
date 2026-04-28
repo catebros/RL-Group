@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -162,6 +163,62 @@ def make_continuous_eval_callback(eval_env_factory, eval_freq, n_eval_episodes, 
 _make_eval_callback = make_continuous_eval_callback
 
 
+def empty_continuous_eval_trace():
+    return {
+        "eval_timesteps": [],
+        "eval_mean_rewards": [],
+        "eval_std_rewards": [],
+        "eval_success_rates": [],
+        "eval_mean_steps": [],
+    }
+
+
+def load_continuous_eval_trace(run_name, tensorboard_log="runs"):
+    """Load S4 evaluation traces from TensorBoard logs, if they exist."""
+    try:
+        from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+    except ImportError:
+        return empty_continuous_eval_trace()
+
+    log_root = Path(tensorboard_log)
+    candidates = []
+    exact = log_root / run_name
+    if exact.exists():
+        candidates.append(exact)
+    candidates.extend(sorted(log_root.glob(f"{run_name}_*")))
+    candidates = [path for path in candidates if any(path.glob("events.out.tfevents.*"))]
+    if not candidates:
+        return empty_continuous_eval_trace()
+
+    log_dir = max(candidates, key=lambda path: path.stat().st_mtime)
+    accumulator = EventAccumulator(str(log_dir), size_guidance={"scalars": 0})
+    try:
+        accumulator.Reload()
+    except Exception:
+        return empty_continuous_eval_trace()
+
+    tags = set(accumulator.Tags().get("scalars", []))
+    if "s4_eval/mean_reward" not in tags:
+        return empty_continuous_eval_trace()
+
+    mean_reward_events = accumulator.Scalars("s4_eval/mean_reward")
+    trace = empty_continuous_eval_trace()
+    trace["eval_timesteps"] = [event.step for event in mean_reward_events]
+    trace["eval_mean_rewards"] = [event.value for event in mean_reward_events]
+
+    tag_to_key = {
+        "s4_eval/std_reward": "eval_std_rewards",
+        "s4_eval/success_rate": "eval_success_rates",
+        "s4_eval/mean_steps": "eval_mean_steps",
+    }
+    for tag, key in tag_to_key.items():
+        if tag in tags:
+            by_step = {event.step: event.value for event in accumulator.Scalars(tag)}
+            trace[key] = [by_step.get(step, np.nan) for step in trace["eval_timesteps"]]
+
+    return trace
+
+
 def train_sb3_continuous(
     algorithm,
     env_factory,
@@ -207,6 +264,7 @@ def train_sb3_continuous(
         "model": model,
         "run_name": run_name,
         "log_dir": os.path.join(tensorboard_log, run_name),
+        **empty_continuous_eval_trace(),
         "eval_timesteps": callback.eval_timesteps,
         "eval_mean_rewards": callback.eval_mean_rewards,
         "eval_std_rewards": callback.eval_std_rewards,

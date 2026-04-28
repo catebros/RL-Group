@@ -41,6 +41,8 @@ from .training.continuous import (
     TD3_ACTION_NOISE_TYPE,
     TD3_GAMMA,
     TD3_LEARNING_STARTS,
+    empty_continuous_eval_trace,
+    load_continuous_eval_trace,
     make_continuous_eval_callback,
     make_sb3_continuous_model,
     load_sb3_continuous_model,
