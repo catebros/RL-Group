@@ -6,7 +6,9 @@
       "Read(//opt/homebrew/Caskroom/miniconda/base/**)",
       "Bash(conda env *)",
       "Bash(uv --version)",
-      "Bash(uv run *)"
+      "Bash(uv run *)",
+      "Bash(grep -n *)",
+      "Bash(grep -c *)"
     ]
   }
 }
