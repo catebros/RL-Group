@@ -59,6 +59,28 @@ def plot_policy_heatmap(policy_grid, n_bins=40, title='Policy Map', ax=None):
     return ax
 
 
+def plot_continuous_action_heatmap(action_grid, n_bins=40, title='Continuous Action Map',
+                                   ax=None, magnitude=False):
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7, 5))
+
+    pos_edges = np.linspace(-1.2, 0.6, n_bins + 1)
+    vel_edges = np.linspace(-0.07, 0.07, n_bins + 1)
+    values = np.abs(action_grid) if magnitude else action_grid
+    cmap = 'viridis' if magnitude else 'coolwarm'
+    vmin, vmax = (0, 1) if magnitude else (-1, 1)
+
+    mesh = ax.pcolormesh(pos_edges, vel_edges, values.T, cmap=cmap, vmin=vmin, vmax=vmax)
+    label = '|action|' if magnitude else 'action'
+    ax.figure.colorbar(mesh, ax=ax, label=label)
+    ax.axvline(0.45, color='gold', linestyle='--', linewidth=1.5)
+    ax.axhline(0, color='gray', linestyle=':', linewidth=1)
+    ax.set_xlabel('Position x')
+    ax.set_ylabel('Velocity v')
+    ax.set_title(title)
+    return ax
+
+
 def plot_value_surface_3d(value_grid, n_bins=40, title='Value Function', ax=None):
     pos_vals = np.linspace(-1.2, 0.6, n_bins)
     vel_vals = np.linspace(-0.07, 0.07, n_bins)
@@ -97,7 +119,8 @@ def collect_trajectories(env_factory, agent_fn, n_episodes=10, max_steps=200):
     return trajectories, total_rewards
 
 
-def plot_phase_portrait(trajectories, rewards, title='Phase Portrait', ax=None):
+def plot_phase_portrait(trajectories, rewards, title='Phase Portrait', ax=None,
+                        goal_position=0.5):
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 5))
 
@@ -106,7 +129,7 @@ def plot_phase_portrait(trajectories, rewards, title='Phase Portrait', ax=None):
         ax.scatter(traj[:, 0], traj[:, 1], s=8, color=c, alpha=0.7, label=f'R={r:.1f}')
         ax.plot(traj[:, 0], traj[:, 1], color=c, alpha=0.3, linewidth=0.8)
 
-    ax.axvline(0.5, color='gold', linestyle='--', linewidth=1.5)
+    ax.axvline(goal_position, color='gold', linestyle='--', linewidth=1.5)
     ax.axhline(0, color='gray', linestyle=':',linewidth=1)
     ax.set_xlabel('Position x')
     ax.set_ylabel('Velocity v')
@@ -140,13 +163,16 @@ def count_steps(env_factory, agent_fn, n_episodes=100, max_steps=999):
 
 
 def get_sac_policy_grid(model, n_bins=40):
-    import numpy as np
-    pos_vals = np.linspace(-1.2, 0.6,n_bins)
+    return get_continuous_policy_grid(model, n_bins=n_bins)
+
+
+def get_continuous_policy_grid(model, n_bins=40):
+    pos_vals = np.linspace(-1.2, 0.6, n_bins)
     vel_vals = np.linspace(-0.07, 0.07, n_bins)
     actions  = np.zeros((n_bins, n_bins))
     for i, p in enumerate(pos_vals):
         for j, v in enumerate(vel_vals):
             obs = np.array([[p, v]], dtype=np.float32)
             action, _ = model.predict(obs, deterministic=True)
-            actions[i, j] = float(action[0])
+            actions[i, j] = float(np.asarray(action).reshape(-1)[0])
     return actions

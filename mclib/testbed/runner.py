@@ -80,6 +80,55 @@ class Testbed:
         }
         return self.results["dqn"]
 
+    def run_continuous(self, env_factory, agent, total_timesteps,
+                       eval_every=10_000, n_eval=20, final_n_eval=100,
+                       verbose=True, eval_env_factory=None,
+                       training_eval_env_factory=None,
+                       deterministic_eval=True, model_save_path=None):
+        """Train + evaluate a SACAgent/TD3Agent and store S4-style metrics."""
+        if getattr(agent, "env_factory", None) is None:
+            agent.env_factory = env_factory
+
+        run_name = self.name.replace("/", "_")
+        train_eval_factory = training_eval_env_factory or env_factory
+        final_eval_factory = eval_env_factory or env_factory
+        train_result = agent.train(
+            run_name=run_name,
+            total_timesteps=total_timesteps,
+            eval_env_factory=train_eval_factory,
+            eval_freq=eval_every,
+            n_eval_episodes=n_eval,
+            deterministic_eval=deterministic_eval,
+            model_save_path=model_save_path,
+        )
+        final_eval = agent.evaluate(
+            final_eval_factory,
+            n_episodes=final_n_eval,
+            deterministic=deterministic_eval,
+        )
+        final_rewards = [ep["reward"] for ep in final_eval["episodes"]]
+        self._log_final_continuous(final_eval["summary"])
+
+        result_key = getattr(agent, "algorithm", "continuous").lower()
+        self.results[result_key] = {
+            **train_result,
+            "eval_means": train_result["eval_mean_rewards"],
+            "eval_stds": train_result["eval_std_rewards"],
+            "eval_steps": train_result["eval_timesteps"],
+            "final": final_rewards,
+            "final_eval": final_eval,
+            "summary": final_eval["summary"],
+        }
+        if verbose:
+            summary = final_eval["summary"]
+            print(
+                f"[Testbed] {getattr(agent, 'algorithm', 'continuous')} eval — "
+                f"reward={summary['mean_reward']:.2f} +/- {summary['std_reward']:.2f} | "
+                f"success={summary['success_rate']:.1%} | "
+                f"steps={summary['mean_steps']:.1f}"
+            )
+        return self.results[result_key]
+
     def _log_final(self, final_rewards):
         mean = np.mean(final_rewards)
         std = np.std(final_rewards)
@@ -89,6 +138,20 @@ class Testbed:
         self.writer.add_scalar(f"{self.name}/success_rate", success, 0)
         print(f"[Testbed] Final eval — mean={mean:.2f} +/- {std:.2f} | "
               f"success={success:.1%}")
+
+    def _log_final_continuous(self, summary):
+        self.writer.add_scalar(f"{self.name}/final_mean", summary["mean_reward"], 0)
+        self.writer.add_scalar(f"{self.name}/final_std", summary["std_reward"], 0)
+        self.writer.add_scalar(f"{self.name}/success_rate", summary["success_rate"], 0)
+        self.writer.add_scalar(f"{self.name}/mean_steps", summary["mean_steps"], 0)
+        self.writer.add_scalar(f"{self.name}/mean_fuel", summary["mean_fuel"], 0)
+        self.writer.add_scalar(
+            f"{self.name}/mean_non_null_actions",
+            summary["mean_non_null_actions"],
+            0,
+        )
+        print(f"[Testbed] Final eval — mean={summary['mean_reward']:.2f} +/- "
+              f"{summary['std_reward']:.2f} | success={summary['success_rate']:.1%}")
 
     def close(self):
         self.writer.close()
