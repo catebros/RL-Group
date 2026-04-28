@@ -13,10 +13,12 @@ from .envs.wrappers import (
     ContinuousActionUseWrapper,
     ContinuousShapedRewardWrapper,
     ContinuousLinearActionWrapper,
+    ContinuousFuelShapedWrapper,
     EnergyShapingWrapper,
     make_s1,
     make_s1_shaped,
     make_s2,
+    make_s2_shaped,
     make_s3,
     make_s3_v2,
     make_s4,
@@ -33,6 +35,10 @@ from .training.loops import (
     train_dqn, evaluate_dqn,
 )
 from .training.continuous import (
+    S2_DEFAULT_SEED,
+    S2_TOTAL_TIMESTEPS,
+    S2_TD3_TOTAL_TIMESTEPS,
+    S2_MAX_STEPS,
     S4_DEFAULT_SEED,
     S4_TOTAL_TIMESTEPS,
     S4_TD3_TOTAL_TIMESTEPS,

@@ -141,6 +141,33 @@ class ContinuousLinearActionWrapper(ContinuousActionUseWrapper):
     """Deprecated compatibility alias; use ContinuousActionUseWrapper."""
 
 
+class ContinuousFuelShapedWrapper(gym.Wrapper):
+    """
+    Scenario 2: Continuous — Fuel-Minimizing with momentum shaping.
+    Keeps the native squared-action penalty (-0.1*a^2 + 100 on goal) and adds
+    small progress and velocity bonuses to guide exploration toward the
+    momentum-building swing strategy without altering the fuel-cost objective.
+    """
+    PROGRESS_WEIGHT = 0.5
+    VELOCITY_WEIGHT = 0.05
+
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        self._last_obs = np.asarray(obs, dtype=float)
+        return obs, info
+
+    def step(self, action):
+        previous_obs = getattr(self, "_last_obs", None)
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        if previous_obs is not None:
+            next_obs = np.asarray(obs, dtype=float)
+            progress_bonus = self.PROGRESS_WEIGHT * float(next_obs[0] - previous_obs[0])
+            velocity_bonus = self.VELOCITY_WEIGHT * abs(float(next_obs[1]))
+            reward += progress_bonus + velocity_bonus
+        self._last_obs = np.asarray(obs, dtype=float)
+        return obs, reward, terminated, truncated, info
+
+
 class EnergyShapingWrapper(gym.Wrapper):
     """
     Potential-based reward shaping for discrete MountainCar (Scenario 1 variant).
@@ -172,6 +199,10 @@ def make_s1_shaped():
 
 def make_s2():
     return Monitor(gym.make('MountainCarContinuous-v0'))
+
+
+def make_s2_shaped():
+    return Monitor(ContinuousFuelShapedWrapper(gym.make('MountainCarContinuous-v0')))
 
 
 def make_s3():
