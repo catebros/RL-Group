@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Read(//Users/borisgans/**)",
+      "Read(//opt/homebrew/Caskroom/miniconda/base/**)",
+      "Bash(conda env *)",
+      "Bash(uv --version)",
+      "Bash(uv run *)"
+    ]
+  }
+}
