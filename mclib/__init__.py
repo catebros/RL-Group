@@ -1,20 +1,34 @@
 # mclib — Mountain Car RL library
 # Agents
-from .agents.tabular import TabularQLearningAgent
-from .agents.dqn     import QNetwork, DQNAgent
+from .agents.tabular import TabularQLearningAgent, SarsaAgent
+from .agents.dqn import QNetwork, DQNAgent
 
 # Environments
 from .envs.wrappers import (
-    DiscreteFuelWrapper, ContinuousStepsWrapper,
-    ContinuousActionUseWrapper, ContinuousShapedRewardWrapper, ContinuousLinearActionWrapper,
-    make_s1, make_s2, make_s3, make_s4,
-    make_s4_default, make_s4_action_use, make_s4_shaped, make_s4_linear_action,
+    DiscreteFuelWrapper,
+    DiscreteFuelWrapperV2,
+    ContinuousStepsWrapper,
+    ContinuousActionUseWrapper,
+    ContinuousShapedRewardWrapper,
+    ContinuousLinearActionWrapper,
+    EnergyShapingWrapper,
+    make_s1,
+    make_s1_shaped,
+    make_s2,
+    make_s3,
+    make_s3_v2,
+    make_s4,
+    make_s4_default,
+    make_s4_action_use,
+    make_s4_shaped,
+    make_s4_linear_action,
 )
 
 # Training
 from .training.loops import (
     train_tabular, evaluate_tabular,
-    train_dqn,     evaluate_dqn,
+    train_sarsa,
+    train_dqn, evaluate_dqn,
 )
 from .training.continuous import (
     S4_DEFAULT_SEED,
