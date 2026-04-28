@@ -2,6 +2,8 @@
 # Agents
 from .agents.tabular import TabularQLearningAgent, SarsaAgent
 from .agents.dqn import QNetwork, DQNAgent
+from .agents.sac import SACAgent
+from .agents.td3 import TD3Agent
 
 # Environments
 from .envs.wrappers import (
@@ -39,6 +41,7 @@ from .training.continuous import (
     TD3_ACTION_NOISE_TYPE,
     TD3_GAMMA,
     TD3_LEARNING_STARTS,
+    make_continuous_eval_callback,
     make_sb3_continuous_model,
     load_sb3_continuous_model,
     train_sb3_continuous,

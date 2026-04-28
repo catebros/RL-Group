@@ -116,7 +116,7 @@ def load_sb3_continuous_model(
     )
 
 
-def _make_eval_callback(eval_env_factory, eval_freq, n_eval_episodes, deterministic):
+def make_continuous_eval_callback(eval_env_factory, eval_freq, n_eval_episodes, deterministic):
     from stable_baselines3.common.callbacks import BaseCallback
 
     class ContinuousEvalCallback(BaseCallback):
@@ -159,6 +159,9 @@ def _make_eval_callback(eval_env_factory, eval_freq, n_eval_episodes, determinis
     return ContinuousEvalCallback()
 
 
+_make_eval_callback = make_continuous_eval_callback
+
+
 def train_sb3_continuous(
     algorithm,
     env_factory,
@@ -186,7 +189,7 @@ def train_sb3_continuous(
         verbose=verbose,
         **model_kwargs,
     )
-    callback = _make_eval_callback(
+    callback = make_continuous_eval_callback(
         env_factory,
         eval_freq=eval_freq,
         n_eval_episodes=n_eval_episodes,
