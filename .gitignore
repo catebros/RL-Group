@@ -30,6 +30,7 @@ Thumbs.db
 *.npy
 events*
 
+.claude/
 eval-plan.md
 explanation.md
 repo.md
