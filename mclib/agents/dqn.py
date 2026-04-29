@@ -30,7 +30,7 @@ class DQNAgent:
                  lr=1e-3, gamma=0.99,
                  eps_start=1.0, eps_end=0.01, eps_decay=5000,
                  buffer_size=50_000, batch_size=64,
-                 target_update_freq=500):
+                 target_update_freq=500, double=True):
         self.action_dim = action_dim
         self.gamma = gamma
         self.eps_start = eps_start
@@ -39,6 +39,7 @@ class DQNAgent:
         self.batch_size = batch_size
         self.target_freq = target_update_freq
         self.steps_done = 0
+        self.double = double
 
         self.policy_net = QNetwork(state_dim, action_dim)
         self.target_net = QNetwork(state_dim, action_dim)
@@ -81,7 +82,11 @@ class DQNAgent:
         curr_q = self.policy_net(states).gather(1, actions)
 
         with torch.no_grad():
-            next_q = self.target_net(next_states).max(1)[0].unsqueeze(1)
+            if self.double:
+                next_actions = self.policy_net(next_states).argmax(1, keepdim=True)
+                next_q = self.target_net(next_states).gather(1, next_actions)
+            else:
+                next_q = self.target_net(next_states).max(1)[0].unsqueeze(1)
             target_q = rewards + self.gamma * next_q * (1 - dones)
 
         loss = F.smooth_l1_loss(curr_q, target_q)
@@ -100,12 +105,14 @@ class DQNAgent:
             'policy_net': self.policy_net.state_dict(),
             'target_net': self.target_net.state_dict(),
             'steps_done': self.steps_done,
+            'double': self.double,
         }, path)
 
     @classmethod
     def load(cls, path, **kwargs):
-        agent = cls(**kwargs)
         data = torch.load(path, map_location='cpu', weights_only=True)
+        kwargs.setdefault('double', data.get('double', False))
+        agent = cls(**kwargs)
         agent.policy_net.load_state_dict(data['policy_net'])
         agent.target_net.load_state_dict(data['target_net'])
         agent.steps_done = data['steps_done']
