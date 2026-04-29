@@ -26,3 +26,12 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+*.npy
+events*
+
+.claude/
+eval-plan.md
+explanation.md
+repo.md
+report.md

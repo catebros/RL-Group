@@ -17,6 +17,7 @@ dependencies = [
     # Numerics & data
     "numpy>=2.2",
     "pandas>=2.3",
+    "scikit-learn>=1.5",
 
     # Visualization
     "matplotlib>=3.10",
