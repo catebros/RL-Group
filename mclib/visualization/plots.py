@@ -176,3 +176,98 @@ def get_continuous_policy_grid(model, n_bins=40):
             action, _ = model.predict(obs, deterministic=True)
             actions[i, j] = float(np.asarray(action).reshape(-1)[0])
     return actions
+
+
+def plot_reward_distributions(agents_data, title='Final Reward Distributions', ncols=None):
+    """
+    agents_data: list of (label, rewards, color)
+    """
+    n = len(agents_data)
+    if ncols is None:
+        ncols = 2 if n > 3 else n
+    nrows = int(np.ceil(n / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 7, nrows * 4))
+    axes = np.array(axes).flatten()
+
+    for ax, (label, final, color) in zip(axes, agents_data):
+        final = np.array(final)
+        ax.hist(final, bins=20, color=color, alpha=0.7, edgecolor='black')
+        mean = np.mean(final)
+        ci = 1.96 * np.std(final) / np.sqrt(len(final))
+        ax.axvline(mean, color='red', linestyle='--', label=f'mean={mean:.1f}')
+        ax.axvline(mean - ci, color='gray', linestyle=':', label=f'95% CI +/-{ci:.1f}')
+        ax.axvline(mean + ci, color='gray', linestyle=':')
+        ax.set_title(f'{label}: Reward Distribution')
+        ax.set_xlabel('Episode Reward')
+        ax.legend(fontsize=8)
+
+    for ax in axes[n:]:
+        ax.set_visible(False)
+
+    plt.suptitle(title, fontsize=13, fontweight='bold')
+    plt.tight_layout()
+    return fig
+
+
+def plot_convergence_and_boxplot(tabular_series, finals_data, title='Convergence & Final Performance'):
+    """
+    tabular_series: list of (results_dict, label, color, marker) for convergence lines.
+                    results_dict must have 'eval_episodes', 'eval_means', 'eval_stds'.
+    finals_data:    list of (label, rewards, color) for the boxplot.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+
+    ax = axes[0]
+    for results, label, color, marker in tabular_series:
+        eps   = results['eval_episodes']
+        means = np.array(results['eval_means'])
+        stds  = np.array(results['eval_stds'])
+        ax.plot(eps, means, f'{marker}-', color=color, label=label, linewidth=1.5)
+        ax.fill_between(eps, means - stds, means + stds, alpha=0.15, color=color)
+    ax.axhline(-200, color='black', linestyle=':', alpha=0.4, label='Timeout baseline')
+    ax.set_xlabel('Episode')
+    ax.set_ylabel('Eval Mean Reward (±1 std)')
+    ax.set_title('Tabular Agents: Convergence Comparison')
+    ax.legend(fontsize=9)
+
+    ax2 = axes[1]
+    data    = [np.array(r) for _, r, _ in finals_data]
+    labels  = [l for l, _, _ in finals_data]
+    colors  = [c for _, _, c in finals_data]
+    bp = ax2.boxplot(data, labels=labels, patch_artist=True, widths=0.5)
+    for patch, color in zip(bp['boxes'], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.7)
+    ax2.axhline(-200, color='red', linestyle='--', alpha=0.4, label='Timeout')
+    ax2.set_ylabel('Episode Reward')
+    ax2.set_title('Final Performance Distribution')
+    ax2.legend(fontsize=9)
+
+    plt.suptitle(title, fontsize=13, fontweight='bold')
+    plt.tight_layout()
+    return fig
+
+
+def plot_visit_frequency(agents, labels, title='Exploration Coverage', n_bins=40, prefix=''):
+    """
+    agents: list of tabular agents with a get_visit_grid() method.
+    """
+    n = len(agents)
+    fig, axes = plt.subplots(1, n, figsize=(n * 5 + 1, 4))
+    axes = np.array(axes).flatten()
+
+    pos_edges = np.linspace(-1.2, 0.6,  n_bins + 1)
+    vel_edges = np.linspace(-0.07, 0.07, n_bins + 1)
+
+    for ax, agent, label in zip(axes, agents, labels):
+        visit = np.log1p(agent.get_visit_grid())
+        im = ax.pcolormesh(pos_edges, vel_edges, visit.T, cmap='Blues')
+        plt.colorbar(im, ax=ax, label='log(visits + 1)')
+        ax.set_xlabel('Position')
+        ax.set_ylabel('Velocity')
+        pfx = f'{prefix} ' if prefix else ''
+        ax.set_title(f'{pfx}{label}: State Visit Frequency')
+
+    plt.suptitle(title, fontsize=13, fontweight='bold')
+    plt.tight_layout()
+    return fig
