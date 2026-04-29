@@ -15,7 +15,7 @@ env/
 *.ipynb_checkpoint
 
 # Generated figures
-*.png
+# *.png
 *.pdf
 
 
